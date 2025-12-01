@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HateShield — Analyzer</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body class="slide-up">
+  <nav class="glass-nav">
+    <div class="logo" onclick="location.href='index.html'"><div class="logo-mark">HS</div><div class="logo-text">HateShield</div></div>
+    <div class="nav-center">
+      <a class="nav-link" href="index.html">Home</a>
+      <a class="nav-link active" href="dashboard.html">Analyzer</a>
+      <a class="nav-link" href="settings.html">Settings</a>
+    </div>
+    <div class="nav-right">
+      <button id="themeToggle" class="icon-btn" onclick="toggleTheme()">🌙</button>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="page-grid">
+      <section class="glass-card big-card">
+        <h2>Analyzer</h2>
+        <p class="muted">Paste any comment below. HateShield will analyze it and provide a safe rewrite.</p>
+        <textarea id="inputText" placeholder="Type or paste a comment..."></textarea>
+
+        <div class="controls">
+          <div class="charcount" id="charcount">0 chars</div>
+          <div>
+            <button class="primary-btn" id="analyzeBtn" onclick="analyzeComment()">Analyze & Shield</button>
+            <button class="outline-btn" onclick="setExampleText('You are so dumb and useless!')">Example</button>
+          </div>
+        </div>
+
+        <div id="analysisResult" class="result-block visually-hidden">
+          <div class="result-head">
+            <div class="badge" id="resultBadge">SAFE</div>
+            <div class="muted" id="resultMeta">Confidence: 0% • Processed in 0ms</div>
+          </div>
+
+          <div class="result-body">
+            <div id="emotionBar" class="emotion-bar"></div>
+            <div class="rewrite-section">
+              <h4>Safe Rewrite</h4>
+              <div id="rewrittenText" class="rewritten"></div>
+              <div class="rewrite-actions">
+                <button class="outline-btn" onclick="copyRewrite()">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="glass-card side-card">
+        <h3>Quick tips</h3>
+        <ul class="tips"><li>Use Analyze to classify and rewrite.</li><li>Saved analyses appear in History (local storage).</li></ul>
+        <hr />
+        <h4>Examples</h4>
+        <div class="example-list">
+          <button class="chip" onclick="setExampleText('You’re so dumb and useless!')">“You’re so dumb…”</button>
+          <button class="chip" onclick="setExampleText('I disagree with your approach, but good effort.')">“Respectful disagreement”</button>
+          <button class="chip" onclick="setExampleText('People like you do not belong here.')">“Hate speech example”</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <footer class="glass-footer">© HateShield</footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/common.js"></script>
+</body>
+</html>
