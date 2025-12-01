@@ -1,0 +1,568 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HateShield — Analyzer</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <style>
+    /* Enhanced UX improvements */
+    .input-wrapper {
+      position: relative;
+    }
+    
+    .char-limit-warning {
+      color: #ff9966;
+      font-weight: 600;
+    }
+    
+    .char-limit-error {
+      color: #ff6b6b;
+      font-weight: 600;
+    }
+    
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .result-block {
+      animation: slideUp 0.3s ease-out;
+    }
+    
+    .classification-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .classification-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    
+    .badge-safe::before {
+      background: #4ade80;
+      box-shadow: 0 0 8px #4ade80;
+    }
+    
+    .badge-offensive::before {
+      background: #fbbf24;
+      box-shadow: 0 0 8px #fbbf24;
+    }
+    
+    .badge-toxic::before,
+    .badge-hate_speech::before {
+      background: #f87171;
+      box-shadow: 0 0 8px #f87171;
+    }
+    
+    .emotion-bar {
+      margin: 16px 0;
+      padding: 12px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+    }
+    
+    .emotion-item {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+      gap: 12px;
+    }
+    
+    .emotion-label {
+      min-width: 80px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    
+    .emotion-progress {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    
+    .emotion-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease-out;
+    }
+    
+    .emotion-value {
+      min-width: 40px;
+      text-align: right;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    .copy-feedback {
+      position: fixed;
+      bottom: 80px;
+      right: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #052033;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      animation: slideUp 0.3s ease-out;
+      z-index: 50;
+    }
+    
+    .loading-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(5,32,51,0.3);
+      border-top-color: #052033;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .tooltip {
+      position: relative;
+      cursor: help;
+    }
+    
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 10px;
+      background: rgba(0,0,0,0.9);
+      color: #fff;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+      margin-bottom: 8px;
+      z-index: 100;
+    }
+    
+    .history-section {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--glass-border);
+    }
+    
+    .history-item {
+      background: rgba(255,255,255,0.02);
+      padding: 10px;
+      border-radius: 8px;
+      margin: 8px 0;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    
+    .history-item:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--glass-border);
+    }
+    
+    .history-item-text {
+      font-size: 13px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .history-item-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      display: inline-block;
+      margin-top: 4px;
+    }
+    
+    .clear-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #ff6b6b;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    
+    .clear-btn:hover {
+      background: rgba(255,107,107,0.1);
+      border-color: #ff6b6b;
+    }
+  </style>
+</head>
+<body class="slide-up">
+  <nav class="glass-nav">
+    <div class="logo" onclick="location.href='index.html'"><div class="logo-mark">HS</div><div class="logo-text">HateShield</div></div>
+    <div class="nav-center">
+      <a class="nav-link" href="index.html">Home</a>
+      <a class="nav-link active" href="dashboard.html">Analyzer</a>
+      <a class="nav-link" href="settings.html">Settings</a>
+    </div>
+    <div class="nav-right">
+      <button id="themeToggle" class="icon-btn" onclick="toggleTheme()">🌙</button>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="page-grid">
+      <section class="glass-card big-card">
+        <h2>Text Analyzer</h2>
+        <p class="muted">Paste any comment below. HateShield will analyze it instantly and provide a safe rewrite.</p>
+        
+        <div class="input-wrapper">
+          <textarea 
+            id="inputText" 
+            placeholder="Type or paste a comment here... (e.g., social media posts, comments, messages)"
+            maxlength="5000"
+          ></textarea>
+        </div>
+
+        <div class="controls">
+          <div>
+            <span class="charcount" id="charcount">0 / 5000 chars</span>
+          </div>
+          <div class="quick-actions">
+            <button class="outline-btn" onclick="clearText()" title="Clear text">
+              🗑️ Clear
+            </button>
+            <button class="outline-btn" onclick="setExampleText('You are so dumb and useless!')">
+              💡 Example
+            </button>
+            <button class="primary-btn" id="analyzeBtn" onclick="analyzeComment()">
+              🛡️ Analyze & Shield
+            </button>
+          </div>
+        </div>
+
+        <div id="analysisResult" class="result-block visually-hidden">
+          <div class="result-head">
+            <div class="classification-badge badge" id="resultBadge">SAFE</div>
+            <div class="muted" id="resultMeta">Confidence: 0% • Processed in 0ms</div>
+          </div>
+
+          <div class="result-body">
+            <div id="emotionBar" class="emotion-bar">
+              <h4 style="margin: 0 0 12px 0; font-size: 14px;">Emotional Analysis</h4>
+              <div class="emotion-item">
+                <span class="emotion-label">😠 Anger</span>
+                <div class="emotion-progress">
+                  <div class="emotion-fill" id="anger-fill" style="background: #f87171; width: 0%"></div>
+                </div>
+                <span class="emotion-value" id="anger-value">0%</span>
+              </div>
+              <div class="emotion-item">
+                <span class="emotion-label">😊 Joy</span>
+                <div class="emotion-progress">
+                  <div class="emotion-fill" id="joy-fill" style="background: #4ade80; width: 0%"></div>
+                </div>
+                <span class="emotion-value" id="joy-value">0%</span>
+              </div>
+              <div class="emotion-item">
+                <span class="emotion-label">😢 Sadness</span>
+                <div class="emotion-progress">
+                  <div class="emotion-fill" id="sadness-fill" style="background: #60a5fa; width: 0%"></div>
+                </div>
+                <span class="emotion-value" id="sadness-value">0%</span>
+              </div>
+              <div class="emotion-item">
+                <span class="emotion-label">😨 Fear</span>
+                <div class="emotion-progress">
+                  <div class="emotion-fill" id="fear-fill" style="background: #a78bfa; width: 0%"></div>
+                </div>
+                <span class="emotion-value" id="fear-value">0%</span>
+              </div>
+              <div class="emotion-item">
+                <span class="emotion-label">🤢 Disgust</span>
+                <div class="emotion-progress">
+                  <div class="emotion-fill" id="disgust-fill" style="background: #34d399; width: 0%"></div>
+                </div>
+                <span class="emotion-value" id="disgust-value">0%</span>
+              </div>
+            </div>
+            
+            <div class="rewrite-section">
+              <h4>✨ Safe Rewrite</h4>
+              <div id="rewrittenText" class="rewritten"></div>
+              <div class="rewrite-actions">
+                <button class="outline-btn" onclick="copyRewrite()">📋 Copy Rewrite</button>
+                <button class="outline-btn" onclick="useRewrite()">✏️ Use This Version</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="glass-card side-card">
+        <h3>💡 Quick Tips</h3>
+        <ul class="tips">
+          <li>Type or paste any text to analyze</li>
+          <li>Get instant toxicity classification</li>
+          <li>Copy the safe rewrite with one click</li>
+          <li>View emotional tone analysis</li>
+        </ul>
+        
+        <hr />
+        
+        <h4>📝 Try Examples</h4>
+        <div class="example-list">
+          <button class="chip" onclick="setExampleText('You are so dumb and useless!')">Offensive</button>
+          <button class="chip" onclick="setExampleText('I disagree with your approach, but good effort.')">Respectful</button>
+          <button class="chip" onclick="setExampleText('People like you do not belong here.')">Hate Speech</button>
+          <button class="chip" onclick="setExampleText('Great work on this project!')">Positive</button>
+        </div>
+
+        <div class="history-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h4 style="margin: 0;">🕐 Recent Analyses</h4>
+            <button class="clear-btn" onclick="clearHistory()">Clear</button>
+          </div>
+          <div id="historyList">
+            <p class="muted" style="font-size: 13px; text-align: center;">No analyses yet</p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+  
+  <footer class="glass-footer">© 2024 HateShield • AI-Powered Content Safety</footer>
+
+  <script>
+    // Enhanced API call with better UX
+    async function analyzeComment() {
+      const textEl = document.getElementById('inputText');
+      const resultBox = document.getElementById('analysisResult');
+      const badge = document.getElementById('resultBadge');
+      const meta = document.getElementById('resultMeta');
+      const rewritten = document.getElementById('rewrittenText');
+      const analyzeBtn = document.getElementById('analyzeBtn');
+
+      const text = textEl.value.trim();
+      if (!text) { 
+        showFeedback('⚠️ Please enter text to analyze', 'warning');
+        return; 
+      }
+
+      analyzeBtn.disabled = true;
+      analyzeBtn.innerHTML = '<span class="loading-spinner"></span> Analyzing...';
+
+      try {
+        const resp = await fetch('http://127.0.0.1:5000/analyze', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ text })
+        });
+        
+        if (!resp.ok) throw new Error('Network response was not ok');
+        const data = await resp.json();
+
+        // Update badge with classification class
+        const classification = (data.classification || 'safe').toLowerCase();
+        badge.innerText = classification.toUpperCase().replace('_', ' ');
+        badge.className = `classification-badge badge badge-${classification}`;
+        
+        meta.innerText = `Confidence: ${data.confidence}% • Processed in ${data.processing_time_ms || 0}ms`;
+        rewritten.innerText = data.rewritten_text || '';
+        
+        // Update emotions
+        if (data.emotions) {
+          updateEmotions(data.emotions);
+        }
+        
+        resultBox.classList.remove('visually-hidden');
+        
+        // Save to history
+        saveToHistory(text, classification, data.confidence);
+        
+        // Smooth scroll to results
+        setTimeout(() => {
+          resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+        
+      } catch (e) {
+        showFeedback('❌ Failed to connect to backend. Is it running on http://127.0.0.1:5000?', 'error');
+        console.error(e);
+      } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.innerHTML = '🛡️ Analyze & Shield';
+      }
+    }
+
+    function updateEmotions(emotions) {
+      const emotionTypes = ['anger', 'joy', 'sadness', 'fear', 'disgust'];
+      emotionTypes.forEach(emotion => {
+        const value = emotions[emotion] || 0;
+        const fill = document.getElementById(`${emotion}-fill`);
+        const valueEl = document.getElementById(`${emotion}-value`);
+        
+        if (fill && valueEl) {
+          // Smooth animation
+          setTimeout(() => {
+            fill.style.width = value + '%';
+            valueEl.textContent = value + '%';
+          }, 100);
+        }
+      });
+    }
+
+    function clearText() {
+      const el = document.getElementById('inputText');
+      if (el) {
+        el.value = '';
+        updateCharCount();
+      }
+      document.getElementById('analysisResult').classList.add('visually-hidden');
+    }
+
+    function setExampleText(txt) {
+      const el = document.getElementById('inputText');
+      if (el) {
+        el.value = txt;
+        updateCharCount();
+      }
+    }
+
+    function copyRewrite() {
+      const txt = document.getElementById('rewrittenText')?.innerText || '';
+      if (!txt) return;
+      
+      navigator.clipboard.writeText(txt).then(() => {
+        showFeedback('✅ Copied to clipboard!');
+      });
+    }
+
+    function useRewrite() {
+      const txt = document.getElementById('rewrittenText')?.innerText || '';
+      if (!txt) return;
+      
+      const el = document.getElementById('inputText');
+      if (el) {
+        el.value = txt;
+        updateCharCount();
+        showFeedback('✅ Text replaced with safe version!');
+      }
+    }
+
+    function showFeedback(message, type = 'success') {
+      const existing = document.querySelector('.copy-feedback');
+      if (existing) existing.remove();
+      
+      const feedback = document.createElement('div');
+      feedback.className = 'copy-feedback';
+      feedback.textContent = message;
+      
+      if (type === 'warning') {
+        feedback.style.background = '#fbbf24';
+      } else if (type === 'error') {
+        feedback.style.background = '#f87171';
+        feedback.style.color = '#fff';
+      }
+      
+      document.body.appendChild(feedback);
+      
+      setTimeout(() => {
+        feedback.style.opacity = '0';
+        feedback.style.transform = 'translateY(10px)';
+        setTimeout(() => feedback.remove(), 300);
+      }, 2500);
+    }
+
+    function updateCharCount() {
+      const input = document.getElementById('inputText');
+      const counter = document.getElementById('charcount');
+      if (!input || !counter) return;
+      
+      const len = input.value.length;
+      const max = 5000;
+      counter.textContent = `${len} / ${max} chars`;
+      
+      if (len > max * 0.9) {
+        counter.className = 'charcount char-limit-warning';
+      } else if (len >= max) {
+        counter.className = 'charcount char-limit-error';
+      } else {
+        counter.className = 'charcount';
+      }
+    }
+
+    function saveToHistory(text, classification, confidence) {
+      let history = JSON.parse(localStorage.getItem('hs_history') || '[]');
+      history.unshift({
+        text: text.substring(0, 100),
+        classification,
+        confidence,
+        timestamp: Date.now()
+      });
+      
+      // Keep only last 5
+      history = history.slice(0, 5);
+      localStorage.setItem('hs_history', JSON.stringify(history));
+      loadHistory();
+    }
+
+    function loadHistory() {
+      const history = JSON.parse(localStorage.getItem('hs_history') || '[]');
+      const container = document.getElementById('historyList');
+      
+      if (history.length === 0) {
+        container.innerHTML = '<p class="muted" style="font-size: 13px; text-align: center;">No analyses yet</p>';
+        return;
+      }
+      
+      container.innerHTML = history.map(item => `
+        <div class="history-item" onclick="setExampleText('${item.text.replace(/'/g, "\\'")}')">
+          <div class="history-item-text">${item.text}...</div>
+          <span class="history-item-badge">${item.classification.toUpperCase()}</span>
+        </div>
+      `).join('');
+    }
+
+    function clearHistory() {
+      if (confirm('Clear all analysis history?')) {
+        localStorage.removeItem('hs_history');
+        loadHistory();
+        showFeedback('🗑️ History cleared');
+      }
+    }
+
+    function toggleTheme() {
+      document.documentElement.classList.toggle('light-theme');
+      showFeedback('🎨 Theme toggled');
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('inputText');
+      if (input) {
+        input.addEventListener('input', updateCharCount);
+        
+        // Enter to analyze (Ctrl+Enter)
+        input.addEventListener('keydown', (e) => {
+          if (e.ctrlKey && e.key === 'Enter') {
+            analyzeComment();
+          }
+        });
+      }
+      
+      loadHistory();
+      updateCharCount();
+    });
+  </script>
+</body>
+</html>

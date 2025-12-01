@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HateShield — Settings</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body class="fade-in">
+  <nav class="glass-nav">
+    <div class="logo" onclick="location.href='index.html'"><div class="logo-mark">HS</div><div class="logo-text">HateShield</div></div>
+    <div class="nav-center">
+      <a class="nav-link" href="index.html">Home</a>
+      <a class="nav-link" href="dashboard.html">Analyzer</a>
+      <a class="nav-link active" href="settings.html">Settings</a>
+    </div>
+    <div class="nav-right">
+      <button id="themeToggle" class="icon-btn" onclick="toggleTheme()">🌙</button>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="glass-card">
+      <h2>Settings</h2>
+      <label class="setting-row"><span>Run mode</span>
+        <select id="runMode">
+          <option value="local" selected>Local (rule-based or local ML)</option>
+          <option value="server">Server (custom)</option>
+        </select>
+      </label>
+
+      <div style="margin-top:12px;">
+        <button class="primary-btn" onclick="saveSettings()">Save Settings</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/common.js"></script>
+</body>
+</html>
